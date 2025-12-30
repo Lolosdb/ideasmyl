@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petición Novedades MyL</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <meta name="theme-color" content="#2563eb">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Petición de Novedades</h1>
+            <p>Captura productos y genera tu Excel</p>
+        </header>
+
+        <main id="app-view">
+            <!-- Home View -->
+            <section id="home-view" class="view active">
+                <div class="stats-card">
+                    <div class="stat-item">
+                        <span class="stat-label">Pendientes</span>
+                        <span id="pending-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Sincronizados</span>
+                        <span id="synced-count" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="btn-camera" class="btn btn-primary btn-lg">
+                        <i class="fas fa-camera"></i> Nueva Captura
+                    </button>
+                    <button id="btn-sync" class="btn btn-secondary">
+                        <i class="fas fa-sync"></i> Sincronizar Todo
+                    </button>
+                </div>
+
+                <div class="recent-list" id="recent-list">
+                    <h3>Capturas Recientes</h3>
+                    <div id="capture-container">
+                        <!-- Items will be injected here -->
+                        <p class="empty-msg">No hay capturas recientes</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Camera View -->
+            <section id="camera-view" class="view">
+                <div class="camera-wrapper">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <div class="camera-controls">
+                        <button id="btn-close-camera" class="btn btn-icon"><i class="fas fa-times"></i></button>
+                        <button id="btn-take-photo" class="btn btn-capture"></button>
+                        <button id="btn-switch-camera" class="btn btn-icon"><i class="fas fa-undo"></i></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Form View -->
+            <section id="form-view" class="view">
+                <div class="photos-preview-grid">
+                    <div class="photo-preview-slot" data-slot="1">
+                        <img id="preview-img-1" src="" alt="Foto 1">
+                        <span>Foto 1</span>
+                    </div>
+                    <div class="photo-preview-slot" data-slot="2">
+                        <img id="preview-img-2" src="" alt="Foto 2">
+                        <span>Foto 2</span>
+                    </div>
+                    <div class="photo-preview-slot" data-slot="3">
+                        <img id="preview-img-3" src="" alt="Foto 3">
+                        <span>Foto 3</span>
+                    </div>
+                </div>
+
+                <form id="novelty-form" class="glass-form">
+                    <div class="form-group">
+                        <label for="prod-name">Nombre (D4)</label>
+                        <input type="text" id="prod-name" placeholder="Nombre de la novedad" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-desc">Descripción (D5-D6)</label>
+                        <textarea id="prod-desc" rows="2" placeholder="Descripción detallada"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prod-size">Tamaño Aprox. (D7)</label>
+                            <input type="text" id="prod-size" placeholder="Ej: 20x30cm">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-qty">Cantidad Aprox. (D8)</label>
+                            <input type="text" id="prod-qty" placeholder="Ej: 100 uds">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="prod-text">¿Lleva texto? (D9)</label>
+                            <input type="text" id="prod-text" placeholder="Sí / No / Texto específico">
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-sample">¿Muestra? (D10)</label>
+                            <input type="text" id="prod-sample" placeholder="Sí / No">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prod-zone">Para la zona de (D11)</label>
+                        <input type="text" id="prod-zone" placeholder="Zona de aplicación">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="btn-cancel-form" class="btn btn-outline">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Registro</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <div id="loader" class="loader-overlay hidden">
+            <div class="spinner"></div>
+            <p>Procesando...</p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+    </script>
+</body>
+
+</html>
