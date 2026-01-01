@@ -254,12 +254,12 @@ async function syncAll() {
     // URL por defecto proporcionada por el usuario
     const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbwGCFaayECnQi-ajh4R48zOGoU3BNVXfgTJq7BilCCKTuIOj62QOEpVFNNGTd_OjFL6uA/exec";
 
-    // Si no hay URL guardada, usamos la por defecto y la guardamos
-    if (!localStorage.getItem('myl_gas_url')) {
+    // Forzamos la actualización de la URL si es la vieja
+    if (localStorage.getItem('myl_gas_url') !== DEFAULT_URL) {
         localStorage.setItem('myl_gas_url', DEFAULT_URL);
     }
 
-    const GAS_URL = localStorage.getItem('myl_gas_url') || "https://script.google.com/macros/s/AKfycbGCFaayECnQi-ajh4R48zOGoU3BNVXfgTJq7BilCCKTuIOj62QOEpVFNNGTd_OjFL6uA/exec";
+    const GAS_URL = DEFAULT_URL;
 
     elements.loader.classList.remove('hidden');
 
