@@ -336,14 +336,19 @@ header p {
 }
 
 .capture-item {
-    background: var(--white);
-    border-radius: 15px;
-    padding: 10px;
-    margin-bottom: 12px;
     display: flex;
     align-items: center;
-    gap: 15px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    gap: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.capture-item:hover {
+    transform: translateY(-2px);
 }
 
 .item-thumb {
@@ -365,6 +370,32 @@ header p {
 .item-info p {
     font-size: 0.8rem;
     color: var(--text-light);
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-left: auto;
+}
+
+.btn-delete {
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-delete:hover {
+    background: #fecaca;
+    transform: scale(1.1);
 }
 
 .item-status {

@@ -4,6 +4,7 @@ const state = {
     stream: null,
     capturedImages: [null, null, null], // Array for 3 images
     activeSlot: 0,
+    editingId: null, // Track if we are editing an existing record
     captures: JSON.parse(localStorage.getItem('myl_captures') || '[]'),
     facingMode: 'environment'
 };
@@ -122,8 +123,7 @@ function takePhoto() {
 function handleFormSubmit(e) {
     e.preventDefault();
 
-    const newCapture = {
-        id: Date.now(),
+    const captureData = {
         name: document.getElementById('prod-name').value,
         desc: document.getElementById('prod-desc').value,
         size: document.getElementById('prod-size').value,
@@ -131,25 +131,79 @@ function handleFormSubmit(e) {
         text: document.getElementById('prod-text').value,
         sample: document.getElementById('prod-sample').value,
         zone: document.getElementById('prod-zone').value,
-        images: [...state.capturedImages], // Copy current images
+        images: [...state.capturedImages],
         date: new Date().toLocaleString(),
         status: 'pending'
     };
 
-    state.captures.unshift(newCapture);
-    saveData();
+    if (state.editingId) {
+        // Update existing
+        const index = state.captures.findIndex(c => c.id === state.editingId);
+        if (index !== -1) {
+            state.captures[index] = { ...state.captures[index], ...captureData, id: state.editingId };
+        }
+        state.editingId = null;
+    } else {
+        // New capture
+        const newCapture = { ...captureData, id: Date.now() };
+        state.captures.unshift(newCapture);
+    }
 
-    // Reset
+    saveData();
+    resetForm();
+    switchView('home');
+    renderCaptures();
+    updateStats();
+}
+
+function resetForm() {
     state.capturedImages = [null, null, null];
+    state.editingId = null;
     elements.previewSlots.forEach(s => {
         s.classList.remove('has-photo');
         s.querySelector('img').src = '';
     });
     elements.form.reset();
+}
 
-    switchView('home');
-    renderCaptures();
-    updateStats();
+function editCapture(id) {
+    const capture = state.captures.find(c => c.id === id);
+    if (!capture) return;
+
+    state.editingId = id;
+    state.capturedImages = [...capture.images];
+
+    // Fill form
+    document.getElementById('prod-name').value = capture.name;
+    document.getElementById('prod-desc').value = capture.desc;
+    document.getElementById('prod-size').value = capture.size;
+    document.getElementById('prod-qty').value = capture.qty;
+    document.getElementById('prod-text').value = capture.text;
+    document.getElementById('prod-sample').value = capture.sample;
+    document.getElementById('prod-zone').value = capture.zone;
+
+    // Show images
+    state.capturedImages.forEach((img, i) => {
+        const imgEl = elements.previewImages[i];
+        if (img) {
+            imgEl.src = img;
+            elements.previewSlots[i].classList.add('has-photo');
+        } else {
+            imgEl.src = '';
+            elements.previewSlots[i].classList.remove('has-photo');
+        }
+    });
+
+    switchView('form');
+}
+
+function deleteCapture(id) {
+    if (confirm('¿Estás seguro de que quieres borrar este registro?')) {
+        state.captures = state.captures.filter(c => c.id !== id);
+        saveData();
+        renderCaptures();
+        updateStats();
+    }
 }
 
 function saveData() {
@@ -171,14 +225,19 @@ function renderCaptures() {
     }
 
     elements.captureContainer.innerHTML = state.captures.map(c => `
-        <div class="capture-item">
+        <div class="capture-item" onclick="editCapture(${c.id})">
             <img src="${c.images[0] || ''}" class="item-thumb" alt="thumb">
             <div class="item-info">
                 <h4>${c.name}</h4>
                 <p>${c.date}</p>
             </div>
-            <div class="item-status status-${c.status}">
-                <i class="fas ${c.status === 'synced' ? 'fa-check-circle' : 'fa-clock'}"></i>
+            <div class="item-actions">
+                <button class="btn-delete" onclick="event.stopPropagation(); deleteCapture(${c.id})">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <div class="item-status status-${c.status}">
+                    <i class="fas ${c.status === 'synced' ? 'fa-check-circle' : 'fa-clock'}"></i>
+                </div>
             </div>
         </div>
     `).join('');
@@ -200,7 +259,7 @@ async function syncAll() {
         localStorage.setItem('myl_gas_url', DEFAULT_URL);
     }
 
-    const GAS_URL = localStorage.getItem('myl_gas_url');
+    const GAS_URL = localStorage.getItem('myl_gas_url') || "https://script.google.com/macros/s/AKfycbGCFaayECnQi-ajh4R48zOGoU3BNVXfgTJq7BilCCKTuIOj62QOEpVFNNGTd_OjFL6uA/exec";
 
     elements.loader.classList.remove('hidden');
 
@@ -210,13 +269,15 @@ async function syncAll() {
 
         for (let item of pending) {
             try {
-                const response = await fetch(GAS_URL, {
+                // Ensure timestamp and app version identifier to debug old script issues
+                const payload = { ...item, _app_version: '1.1', _sync_time: new Date().toISOString() };
+
+                await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Seguimos usando no-cors por limitación de GAS
-                    body: JSON.stringify(item)
+                    mode: 'no-cors',
+                    body: JSON.stringify(payload)
                 });
 
-                // Con no-cors no podemos leer la respuesta, pero si no hay error de red, marcamos como enviado
                 item.status = 'synced';
                 successCount++;
             } catch (e) {
@@ -230,14 +291,18 @@ async function syncAll() {
         updateStats();
 
         if (errors.length === 0) {
-            alert(`¡Sincronización completada! Se han enviado ${successCount} registros.`);
+            alert(`¡Sincronización enviada! ${successCount} registros procesados.\nSi el Excel sigue vacío, revisa que hayas IMPLEMENTADO el script como NUEVA VERSIÓN en Google.`);
         } else {
             alert(`Sincronización parcial. Se enviaron ${successCount}, pero fallaron: ${errors.join(', ')}`);
         }
     } catch (err) {
-        console.error("Error general sync:", err);
-        alert("Error crítico durante la sincronización.");
+        console.error("Sync error:", err);
+        alert("Error de conexión al sincronizar.");
     } finally {
         elements.loader.classList.add('hidden');
     }
 }
+
+// Expose functions to window for inline onclick handlers
+window.editCapture = editCapture;
+window.deleteCapture = deleteCapture;
