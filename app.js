@@ -193,7 +193,7 @@ async function syncAll() {
     }
 
     // URL por defecto proporcionada por el usuario
-    const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbw98X0A92tPhG-Zdi7O1PN-FBXfQezaUDZIA7m_PSh_IkYR-pvOoEgAggTo8Iunn2IZ5w/exec";
+    const DEFAULT_URL = "https://script.google.com/macros/s/AKfycbwGCFaayECnQi-ajh4R48zOGoU3BNVXfgTJq7BilCCKTuIOj62QOEpVFNNGTd_OjFL6uA/exec";
 
     // Si no hay URL guardada, usamos la por defecto y la guardamos
     if (!localStorage.getItem('myl_gas_url')) {
@@ -205,23 +205,38 @@ async function syncAll() {
     elements.loader.classList.remove('hidden');
 
     try {
-        // Send items one by one to avoid large payload issues with Google Apps Script
+        let successCount = 0;
+        let errors = [];
+
         for (let item of pending) {
-            await fetch(localStorage.getItem('myl_gas_url'), {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(item)
-            });
-            item.status = 'synced';
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Seguimos usando no-cors por limitación de GAS
+                    body: JSON.stringify(item)
+                });
+
+                // Con no-cors no podemos leer la respuesta, pero si no hay error de red, marcamos como enviado
+                item.status = 'synced';
+                successCount++;
+            } catch (e) {
+                console.error("Error enviando item:", item.id, e);
+                errors.push(item.name);
+            }
         }
 
         saveData();
         renderCaptures();
         updateStats();
-        alert("¡Sincronización enviada!");
+
+        if (errors.length === 0) {
+            alert(`¡Sincronización completada! Se han enviado ${successCount} registros.`);
+        } else {
+            alert(`Sincronización parcial. Se enviaron ${successCount}, pero fallaron: ${errors.join(', ')}`);
+        }
     } catch (err) {
-        console.error("Error sync:", err);
-        alert("Error al sincronizar.");
+        console.error("Error general sync:", err);
+        alert("Error crítico durante la sincronización.");
     } finally {
         elements.loader.classList.add('hidden');
     }
