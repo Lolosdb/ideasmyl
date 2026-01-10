@@ -29,7 +29,9 @@ const elements = {
     pendingCount: document.getElementById('pending-count'),
     syncedCount: document.getElementById('synced-count'),
     loader: document.getElementById('loader'),
-    form: document.getElementById('novelty-form')
+    form: document.getElementById('novelty-form'),
+    modal: document.getElementById('photo-options-modal'),
+    fileInput: document.getElementById('file-input')
 };
 
 // Initialization
@@ -40,10 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     document.getElementById('btn-camera').addEventListener('click', () => {
-        // Find first empty slot or default to 0
-        const emptySlot = state.capturedImages.findIndex(img => img === null);
-        state.activeSlot = emptySlot === -1 ? 0 : emptySlot;
-        openCamera();
+        resetForm();
+        switchView('form');
     });
 
     document.getElementById('btn-close-camera').addEventListener('click', closeCamera);
@@ -52,13 +52,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-cancel-form').addEventListener('click', () => switchView('home'));
     document.getElementById('btn-sync').addEventListener('click', syncAll);
 
-    // Allow clicking slots to retake
+    // Allow clicking slots to open options
     elements.previewSlots.forEach((slot, index) => {
         slot.addEventListener('click', () => {
             state.activeSlot = index;
-            openCamera();
+            openModal();
         });
     });
+
+    elements.fileInput.addEventListener('change', handleFileSelect);
 
     elements.form.addEventListener('submit', handleFormSubmit);
 });
@@ -303,6 +305,79 @@ async function syncAll() {
     }
 }
 
+// Modal & File Handling
+function openModal() {
+    elements.modal.classList.add('active');
+}
+
+function closeModal() {
+    elements.modal.classList.remove('active');
+}
+
+function handlePhotoOption(type) {
+    closeModal();
+    if (type === 'camera') {
+        openCamera();
+    } else if (type === 'gallery') {
+        elements.fileInput.click();
+    }
+}
+
+async function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    e.target.value = ''; // Reset input
+
+    try {
+        const imgData = await resizeImage(file);
+        state.capturedImages[state.activeSlot] = imgData;
+
+        // Update preview
+        const imgElement = elements.previewImages[state.activeSlot];
+        imgElement.src = imgData;
+        elements.previewSlots[state.activeSlot].classList.add('has-photo');
+    } catch (err) {
+        console.error("Error reading file:", err);
+        alert("Error al procesar la imagen.");
+    }
+}
+
+function resizeImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 1280;
+
+                if (width > height && width > maxDim) {
+                    height *= maxDim / width;
+                    width = maxDim;
+                } else if (height > maxDim) {
+                    width *= maxDim / height;
+                    height = maxDim;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 // Expose functions to window for inline onclick handlers
 window.editCapture = editCapture;
 window.deleteCapture = deleteCapture;
+window.handlePhotoOption = handlePhotoOption;
+window.closeModal = closeModal;

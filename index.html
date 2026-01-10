@@ -125,6 +125,25 @@
             </section>
         </main>
 
+        <div id="photo-options-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 class="modal-title">Añadir Foto</h3>
+                <div class="modal-options">
+                    <button class="btn-option" onclick="handlePhotoOption('camera')">
+                        <i class="fas fa-camera"></i>
+                        <span>Cámara</span>
+                    </button>
+                    <button class="btn-option" onclick="handlePhotoOption('gallery')">
+                        <i class="fas fa-image"></i>
+                        <span>Galería</span>
+                    </button>
+                </div>
+                <button onclick="closeModal()" class="btn btn-outline" style="margin-top: 20px; width: 100%; justify-content: center;">Cancelar</button>
+            </div>
+        </div>
+
+        <input type="file" id="file-input" accept="image/*" style="display: none;">
+
         <div id="loader" class="loader-overlay hidden">
             <div class="spinner"></div>
             <p>Procesando...</p>
